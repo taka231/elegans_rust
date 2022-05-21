@@ -2,29 +2,82 @@
 pub enum Token {
     Number(i32),
     Plus,
+    Sub,
+    Mul,
+    Div,
+}
+
+struct Lexer {
+    input: Vec<char>,
+    current_pos: usize,
+}
+
+impl Lexer {
+    fn new(input: &str) -> Lexer {
+        Lexer {
+            input: input.chars().collect::<Vec<char>>(),
+            current_pos: 0,
+        }
+    }
+    fn next(&mut self) {
+        self.current_pos += 1
+    }
+    fn is_eof(&self) -> bool {
+        self.current_pos >= self.input.len()
+    }
+    fn current_char(&self) -> char {
+        self.input[self.current_pos]
+    }
+    fn consume(&mut self, strs: &str) -> bool {
+        let strs_vec: Vec<char> = strs.chars().collect();
+        let input_slice = &(self.input[self.current_pos..]);
+        if input_slice.starts_with(&strs_vec) {
+            self.current_pos += strs_vec.len();
+            true
+        } else {
+            false
+        }
+    }
+    fn peak(&self, f: fn(char) -> bool) -> bool {
+        !self.is_eof() && f(self.current_char())
+    }
+    fn consume_while(&mut self, strs: &str) {
+        while !self.is_eof() && !self.consume(strs) {
+            self.next()
+        }
+    }
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
-    let chars = input.chars().collect::<Vec<char>>();
+    let mut lexer = Lexer::new(input);
 
-    let mut i: usize = 0;
-    while i < chars.len() {
-        match chars[i] {
+    while !lexer.is_eof() {
+        match lexer.current_char() {
             '+' => tokens.push(Token::Plus),
+            '-' => tokens.push(Token::Sub),
+            '*' => tokens.push(Token::Mul),
+            '/' => {
+                if lexer.consume("//") {
+                    lexer.consume_while("\n");
+                    continue;
+                } else {
+                    tokens.push(Token::Div)
+                }
+            }
             ' ' => {
-                i += 1;
+                lexer.next();
                 continue;
             }
             c => {
                 if c.is_digit(10) {
                     // if c is a digit in base 10
                     let mut number_string: String = c.to_string();
-                    i += 1; // consume c
+                    lexer.next(); // consume c
 
-                    while i < chars.len() && chars[i].is_digit(10) {
-                        number_string.push(chars[i]);
-                        i += 1;
+                    while lexer.peak(|c| c.is_digit(10)) {
+                        number_string.push(lexer.current_char());
+                        lexer.next();
                     }
 
                     let number: i32 = number_string.parse().expect("invalid number");
@@ -36,7 +89,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 }
             }
         }
-        i += 1;
+        lexer.next();
     }
 
     tokens
