@@ -113,5 +113,9 @@ mod tests {
     tokenize_test! {
         num_plus_num: ("3+12", [Number(3), Plus, Number(12)]),
         space_consume: ("3 + 12", [Number(3), Plus, Number(12)]),
+        num_sub_num: ("3-12", [Number(3), Sub, Number(12)]),
+        num_mul_num: ("3*12", [Number(3), Mul, Number(12)]),
+        num_div_num: ("3/12", [Number(3), Div, Number(12)]),
+        line_comment: ("//comment\n3", [Number(3)]),
     }
 }
