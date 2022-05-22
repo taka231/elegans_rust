@@ -1,10 +1,7 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Token {
     Number(i32),
-    Plus,
-    Sub,
-    Mul,
-    Div,
+    Op(String),
 }
 
 struct Lexer {
@@ -38,7 +35,7 @@ impl Lexer {
             false
         }
     }
-    fn peak(&self, f: fn(char) -> bool) -> bool {
+    fn currentchar_fulfill(&self, f: fn(char) -> bool) -> bool {
         !self.is_eof() && f(self.current_char())
     }
     fn consume_while(&mut self, strs: &str) {
@@ -46,6 +43,19 @@ impl Lexer {
             self.next()
         }
     }
+    fn take_while(&mut self, f: fn(char) -> bool) -> String {
+        let mut string: String = String::new();
+        while self.currentchar_fulfill(f) {
+            string.push(self.current_char());
+            self.next();
+        }
+        string
+    }
+}
+
+fn is_operator(c: char) -> bool {
+    let operators = vec!['+', '-', '*', '/'];
+    operators.contains(&c)
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -54,31 +64,13 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
     while !lexer.is_eof() {
         match lexer.current_char() {
-            '+' => tokens.push(Token::Plus),
-            '-' => tokens.push(Token::Sub),
-            '*' => tokens.push(Token::Mul),
-            '/' => {
-                if lexer.consume("//") {
-                    lexer.consume_while("\n");
-                    continue;
-                } else {
-                    tokens.push(Token::Div)
-                }
-            }
             ' ' => {
                 lexer.next();
                 continue;
             }
             c => {
                 if c.is_digit(10) {
-                    // if c is a digit in base 10
-                    let mut number_string: String = c.to_string();
-                    lexer.next(); // consume c
-
-                    while lexer.peak(|c| c.is_digit(10)) {
-                        number_string.push(lexer.current_char());
-                        lexer.next();
-                    }
+                    let number_string = lexer.take_while(|c| c.is_digit(10));
 
                     let number: i32 = number_string.parse().expect("invalid number");
                     tokens.push(Token::Number(number));
@@ -86,6 +78,15 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     // Since we `i += 1` at end of the last loop, we have to skip over
                     // the following i += 1 at the end of the current while loop.
                     continue;
+                } else if is_operator(c) {
+                    if lexer.consume("//") {
+                        lexer.consume_while("\n");
+                        continue;
+                    } else {
+                        let operator_string = lexer.take_while(is_operator);
+                        tokens.push(Token::Op(operator_string));
+                        continue;
+                    }
                 }
             }
         }
@@ -111,11 +112,11 @@ mod tests {
         }
     }
     tokenize_test! {
-        num_plus_num: ("3+12", [Number(3), Plus, Number(12)]),
-        space_consume: ("3 + 12", [Number(3), Plus, Number(12)]),
-        num_sub_num: ("3-12", [Number(3), Sub, Number(12)]),
-        num_mul_num: ("3*12", [Number(3), Mul, Number(12)]),
-        num_div_num: ("3/12", [Number(3), Div, Number(12)]),
+        num_plus_num: ("3+12", [Number(3), Op("+".to_string()), Number(12)]),
+        space_consume: ("3 + 12", [Number(3), Op("+".to_string()), Number(12)]),
+        num_sub_num: ("3-12", [Number(3), Op("-".to_string()), Number(12)]),
+        num_mul_num: ("3*12", [Number(3), Op("*".to_string()), Number(12)]),
+        num_div_num: ("3/12", [Number(3), Op("/".to_string()), Number(12)]),
         line_comment: ("//3+5\n3", [Number(3)]),
     }
 }
