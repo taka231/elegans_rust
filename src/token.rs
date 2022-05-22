@@ -116,6 +116,6 @@ mod tests {
         num_sub_num: ("3-12", [Number(3), Sub, Number(12)]),
         num_mul_num: ("3*12", [Number(3), Mul, Number(12)]),
         num_div_num: ("3/12", [Number(3), Div, Number(12)]),
-        line_comment: ("//comment\n3", [Number(3)]),
+        line_comment: ("//3+5\n3", [Number(3)]),
     }
 }
