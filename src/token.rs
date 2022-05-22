@@ -64,7 +64,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
     while !lexer.is_eof() {
         match lexer.current_char() {
-            ' ' => {
+            ' ' | '\n' => {
                 lexer.next();
                 continue;
             }
@@ -113,7 +113,7 @@ mod tests {
     }
     tokenize_test! {
         num_plus_num: ("3+12", [Number(3), Op("+".to_string()), Number(12)]),
-        space_consume: ("3 + 12", [Number(3), Op("+".to_string()), Number(12)]),
+        space_consume: ("3 +\n 12", [Number(3), Op("+".to_string()), Number(12)]),
         num_sub_num: ("3-12", [Number(3), Op("-".to_string()), Number(12)]),
         num_mul_num: ("3*12", [Number(3), Op("*".to_string()), Number(12)]),
         num_div_num: ("3/12", [Number(3), Op("/".to_string()), Number(12)]),
