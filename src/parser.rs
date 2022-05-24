@@ -3,7 +3,7 @@ use crate::token::*;
 use std::iter::Peekable;
 use std::slice::Iter;
 
-fn parse(tokens: &[Token]) -> Expr {
+pub fn parse(tokens: &[Token]) -> Expr {
     parse_expr(&mut tokens.iter().peekable())
 }
 
@@ -12,19 +12,23 @@ fn parse_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
 }
 
 fn parse_additive_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
-    let left_expr = parse_term(tokens);
-    let operation: Token;
-    match tokens.next() {
-        Some(Token::Op(op)) => match &op as &str {
-            "+" | "-" => operation = Token::Op(op.clone()),
-            _op => panic!("unsapported operator"),
-        },
-
-        _ => panic!("Expected operation"),
+    let mut left_expr = parse_term(tokens);
+    loop {
+        match tokens.peek() {
+            Some(Token::Op(op)) if &op as &str == "+" || &op as &str == "-" => {
+                tokens.next();
+                let right_expr = parse_term(tokens);
+                left_expr = Expr::BinOp(
+                    Token::Op(op.clone()),
+                    Box::new(left_expr),
+                    Box::new(right_expr),
+                );
+            }
+            _ => break,
+        }
     }
-    let right_expr = parse_term(tokens);
 
-    Expr::BinOp(operation, Box::new(left_expr), Box::new(right_expr))
+    left_expr
 }
 
 fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
@@ -49,7 +53,36 @@ mod tests {
         }
     }
     parse_test! {
-        num_plus_num: ("10+12", Expr::BinOp(Token::Op("+".to_string()), Box::new( Expr::Number(10) ), Box::new( Expr::Number(12) ))),
-        num_minus_num: ("10-12", Expr::BinOp(Token::Op("-".to_string()), Box::new( Expr::Number(10) ), Box::new( Expr::Number(12) ))),
+        num: ("10", Expr::Number(10)),
+        num_plus_num: (
+            "10+12",
+            Expr::BinOp(
+                Token::Op("+".to_string()),
+                Box::new( Expr::Number(10) ),
+                Box::new( Expr::Number(12) )
+                )
+            ),
+        num_minus_num: (
+            "10-12",
+            Expr::BinOp(
+                Token::Op("-".to_string()),
+                Box::new( Expr::Number(10) ),
+                Box::new( Expr::Number(12) )
+                )
+            ),
+        num_plus_num_minus_num: (
+            "10-12+5",
+            Expr::BinOp(
+                Token::Op("+".to_string()),
+                Box::new(
+                    Expr::BinOp(
+                        Token::Op("-".to_string()),
+                        Box::new(Expr::Number(10)),
+                        Box::new(Expr::Number(12))
+                        )
+                    ),
+                Box::new(Expr::Number(5))
+                )
+            ),
     }
 }
