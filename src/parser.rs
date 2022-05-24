@@ -12,10 +12,30 @@ fn parse_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
 }
 
 fn parse_additive_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
-    let mut left_expr = parse_term(tokens);
+    let mut left_expr = parse_multiplicative_expr(tokens);
     loop {
         match tokens.peek() {
             Some(Token::Op(op)) if &op as &str == "+" || &op as &str == "-" => {
+                tokens.next();
+                let right_expr = parse_multiplicative_expr(tokens);
+                left_expr = Expr::BinOp(
+                    Token::Op(op.clone()),
+                    Box::new(left_expr),
+                    Box::new(right_expr),
+                );
+            }
+            _ => break,
+        }
+    }
+
+    left_expr
+}
+
+fn parse_multiplicative_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
+    let mut left_expr = parse_term(tokens);
+    loop {
+        match tokens.peek() {
+            Some(Token::Op(op)) if &op as &str == "*" || &op as &str == "/" => {
                 tokens.next();
                 let right_expr = parse_term(tokens);
                 left_expr = Expr::BinOp(
@@ -82,6 +102,20 @@ mod tests {
                         )
                     ),
                 Box::new(Expr::Number(5))
+                )
+            ),
+        num_plus_num_mul_num: (
+            "10+12*5",
+            Expr::BinOp(
+                Token::Op("+".to_string()),
+                Box::new(Expr::Number(10)),
+                Box::new(
+                    Expr::BinOp(
+                        Token::Op("*".to_string()),
+                        Box::new(Expr::Number(12)),
+                        Box::new(Expr::Number(5))
+                        )
+                    )
                 )
             ),
     }
