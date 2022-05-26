@@ -57,6 +57,15 @@ fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
             tokens.next();
             Expr::Number(*num)
         }
+        Some(Token::LParen) => {
+            tokens.next();
+            let expr = parse_expr(tokens);
+            if tokens.next() == Some(&&Token::RParen) {
+                expr
+            } else {
+                panic!("Expected LParen")
+            }
+        }
         _ => panic!("Expected term"),
     }
 }
@@ -119,6 +128,20 @@ mod tests {
                         Box::new(Expr::Number(5))
                         )
                     )
+                )
+            ),
+        parens: (
+            "(10+12)*5",
+            Expr::BinOp(
+                Token::Op("*".to_string()),
+                Box::new(
+                    Expr::BinOp(
+                        Token::Op("+".to_string()),
+                        Box::new(Expr::Number(10)),
+                        Box::new(Expr::Number(12))
+                        )
+                    ),
+                Box::new(Expr::Number(5)),
                 )
             ),
     }
