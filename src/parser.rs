@@ -52,8 +52,11 @@ fn parse_multiplicative_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
 }
 
 fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
-    match tokens.next() {
-        Some(Token::Number(num)) => Expr::Number(*num),
+    match tokens.peek() {
+        Some(Token::Number(num)) => {
+            tokens.next();
+            Expr::Number(*num)
+        }
         _ => panic!("Expected term"),
     }
 }

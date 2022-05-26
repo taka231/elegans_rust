@@ -2,6 +2,8 @@
 pub enum Token {
     Number(i32),
     Op(String),
+    LParen,
+    RParen,
 }
 
 struct Lexer {
@@ -68,6 +70,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 lexer.next();
                 continue;
             }
+            '(' => tokens.push(Token::LParen),
+            ')' => tokens.push(Token::RParen),
             c => {
                 if c.is_digit(10) {
                     let number_string = lexer.take_while(|c| c.is_digit(10));
@@ -118,5 +122,6 @@ mod tests {
         num_mul_num: ("3*12", [Number(3), Op("*".to_string()), Number(12)]),
         num_div_num: ("3/12", [Number(3), Op("/".to_string()), Number(12)]),
         line_comment: ("//3+5\n3", [Number(3)]),
+        parens: ("()", [LParen, RParen]),
     }
 }
