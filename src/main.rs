@@ -1,10 +1,12 @@
 extern crate inkwell;
 
 mod ast;
-mod codegen;
+mod compile;
 mod parser;
 mod token;
 
+use inkwell::context::Context;
+use std::env;
 use std::io::{self, Write};
 
 macro_rules! print_flush {
@@ -16,6 +18,23 @@ macro_rules! print_flush {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    if &args[1] == "repl" {
+        repl()
+    } else {
+        let context = Context::create();
+        let compile = compile::Compile {
+            context: &context,
+            builder: &context.create_builder(),
+            module: &context.create_module("main"),
+        };
+        let ast = parser::parse(&token::tokenize(&args[1]));
+        compile.add_main(ast);
+        compile.print();
+    }
+}
+
+fn repl() {
     loop {
         println!();
         print_flush!("?> ");
