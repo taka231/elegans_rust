@@ -23,10 +23,11 @@ fn main() {
         repl()
     } else {
         let context = Context::create();
+        let module = context.create_module("main");
         let compile = compile::Compile {
             context: &context,
             builder: &context.create_builder(),
-            module: &context.create_module("main"),
+            module: &module,
         };
         let ast = parser::parse(&token::tokenize(&args[1]));
         compile.add_main(ast);

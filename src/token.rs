@@ -4,6 +4,7 @@ pub enum Token {
     Op(String),
     LParen,
     RParen,
+    Ident(String),
 }
 
 struct Lexer {
@@ -60,6 +61,14 @@ fn is_operator(c: char) -> bool {
     operators.contains(&c)
 }
 
+fn is_leading_char(c: char) -> bool {
+    c.is_ascii_alphabetic() || c == '_'
+}
+
+fn is_ident_char(c: char) -> bool {
+    c.is_ascii_alphabetic() || c == '_' || c.is_digit(10)
+}
+
 pub fn tokenize(input: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut lexer = Lexer::new(input);
@@ -91,6 +100,15 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                         tokens.push(Token::Op(operator_string));
                         continue;
                     }
+                } else if is_leading_char(c) {
+                    let mut ident = lexer.take_while(is_ident_char);
+                    println!("hoge");
+                    if lexer.currentchar_fulfill(|c| c == '\'') {
+                        ident.push_str("'");
+                        lexer.next();
+                    }
+                    tokens.push(Token::Ident(ident));
+                    continue;
                 }
             }
         }
@@ -123,5 +141,8 @@ mod tests {
         num_div_num: ("3/12", [Number(3), Op("/".to_string()), Number(12)]),
         line_comment: ("//3+5\n3", [Number(3)]),
         parens: ("()", [LParen, RParen]),
+        ident: ("abc", [Ident("abc".to_string())]),
+        ident_containing_underscore: ("_a_b_c_", [Ident("_a_b_c_".to_string())]),
+        ident_end_with_singlequote: ("abc'", [Ident("abc'".to_string())]),
     }
 }
