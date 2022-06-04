@@ -5,6 +5,7 @@ pub enum Token {
     LParen,
     RParen,
     Ident(String),
+    Semicolon,
 }
 
 struct Lexer {
@@ -57,7 +58,7 @@ impl Lexer {
 }
 
 fn is_operator(c: char) -> bool {
-    let operators = vec!['+', '-', '*', '/'];
+    let operators = vec!['+', '-', '*', '/', '='];
     operators.contains(&c)
 }
 
@@ -81,6 +82,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             }
             '(' => tokens.push(Token::LParen),
             ')' => tokens.push(Token::RParen),
+            ';' => tokens.push(Token::Semicolon),
             c => {
                 if c.is_digit(10) {
                     let number_string = lexer.take_while(|c| c.is_digit(10));
@@ -143,6 +145,8 @@ mod tests {
         parens: ("()", [LParen, RParen]),
         ident: ("abc", [Ident("abc".to_string())]),
         ident_containing_underscore: ("_a_b_c_", [Ident("_a_b_c_".to_string())]),
+        ident_containing_num: ("a03b", [Ident("a03b".to_string())]),
         ident_end_with_singlequote: ("abc'", [Ident("abc'".to_string())]),
+        assign: ("a = b", [Ident("a".to_string()), Op("=".to_string()), Ident("b".to_string())]),
     }
 }

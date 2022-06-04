@@ -3,8 +3,30 @@ use crate::token::*;
 use std::iter::Peekable;
 use std::slice::Iter;
 
-pub fn parse(tokens: &[Token]) -> Expr {
-    parse_expr(&mut tokens.iter().peekable())
+pub fn parse(tokens: &[Token]) -> Vec<Stmt> {
+    let mut stmt_vec: Vec<Stmt> = Vec::new();
+    let mut stmts = tokens.split(|token| *token == Token::Semicolon);
+    for stmt in stmts {
+        if *stmt == [] {
+            continue;
+        }
+        let mut stmt_iter = stmt.iter().peekable();
+        let expr = parse_expr(&mut stmt_iter);
+        match expr {
+            Expr::Var(varname) if stmt_iter.next() == Some(&Token::Op("=".to_string())) => {
+                let rh = parse_expr(&mut stmt_iter);
+                stmt_vec.push(Stmt::Assign(varname, rh));
+            }
+            _ => {
+                if stmt_iter.next() == None {
+                    stmt_vec.push(Stmt::ExprStmt(expr));
+                } else {
+                    panic!()
+                }
+            }
+        }
+    }
+    stmt_vec
 }
 
 fn parse_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
@@ -57,6 +79,10 @@ fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
             tokens.next();
             Expr::Number(*num)
         }
+        Some(Token::Ident(str)) => {
+            tokens.next();
+            Expr::Var(str.to_string())
+        }
         Some(Token::LParen) => {
             tokens.next();
             let expr = parse_expr(tokens);
@@ -71,20 +97,23 @@ fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
 }
 
 #[cfg(test)]
-mod tests {
+mod expr_tests {
     use super::*;
-    macro_rules! parse_test {
+    use Expr::*;
+
+    macro_rules! parse_expr_test {
         ($($describe:ident: $value:expr, )*) => {
             $(
                 #[test]
                 fn $describe() {
                     let (string, expr) = $value;
-                    assert_eq!(parse(&tokenize(string)), expr);
+                    assert_eq!(parse_expr(&mut tokenize(string).iter().peekable()), expr);
                 }
             )*
         }
     }
-    parse_test! {
+
+    parse_expr_test! {
         num: ("10", Expr::Number(10)),
         num_plus_num: (
             "10+12",
@@ -144,5 +173,42 @@ mod tests {
                 Box::new(Expr::Number(5)),
                 )
             ),
+        var: (
+            "a + b",
+            BinOp(
+                Token::Op("+".to_string()),
+                Box::new(Var("a".to_string())),
+                Box::new(Var("b".to_string()))
+            )
+        ),
+    }
+}
+
+#[cfg(test)]
+mod stmt_tests {
+    use super::*;
+    use Expr::*;
+    use Stmt::*;
+    macro_rules! parse_stmt_test {
+        ($($describe:ident: $value:expr, )*) => {
+            $(
+                #[test]
+                fn $describe() {
+                    let (string, stmt) = $value;
+                    assert_eq!(parse(&tokenize(string)), stmt);
+                }
+            )*
+        }
+    }
+    parse_stmt_test! {
+        num: ("3; 4;", [ExprStmt(Number(3)), ExprStmt(Number(4))]),
+        num_plus_num: ("3+4;3+4;", [
+            ExprStmt(BinOp(Token::Op("+".to_string()), Box::new(Number(3)), Box::new(Number(4)))),
+            ExprStmt(BinOp(Token::Op("+".to_string()), Box::new(Number(3)), Box::new(Number(4))))
+        ]),
+        assign: ("a = 3; a + 2", [
+            Assign("a".to_string(), Number(3)),
+            ExprStmt(BinOp(Token::Op("+".to_string()), Box::new(Var("a".to_string())), Box::new(Number(2))))
+        ]),
     }
 }

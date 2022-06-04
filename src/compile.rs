@@ -12,6 +12,9 @@ pub struct Compile<'a, 'ctx> {
 }
 
 impl<'a, 'ctx> Compile<'a, 'ctx> {
+    fn compile_stmt(&self, stmts: Vec<Stmt>) -> IntValue {
+        unimplemented!()
+    }
     fn compile_expr(&self, expr: Expr) -> IntValue {
         match expr {
             Expr::Number(num) => self
@@ -45,12 +48,12 @@ impl<'a, 'ctx> Compile<'a, 'ctx> {
             _ => panic!(),
         }
     }
-    pub fn add_main(&self, ast: Expr) {
+    pub fn add_main(&self, ast: Vec<Stmt>) {
         let main_type = self.context.i64_type().fn_type(&[], false);
         let main = self.module.add_function("main", main_type, None);
         let main_block = self.context.append_basic_block(main, "entry");
         self.builder.position_at_end(main_block);
-        let ret = self.compile_expr(ast);
+        let ret = self.compile_stmt(ast);
         self.builder.build_return(Some(&ret));
     }
     pub fn print(&self) {
