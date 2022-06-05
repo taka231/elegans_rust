@@ -22,15 +22,12 @@ fn main() {
     if &args[1] == "repl" {
         repl()
     } else {
-        let context = Context::create();
-        let module = context.create_module("main");
-        let compile = compile::Compile {
-            context: &context,
-            builder: &context.create_builder(),
-            module: &module,
-        };
         let ast = parser::parse(&token::tokenize(&args[1]));
-        compile.add_main(ast);
+        let context = Context::create();
+        let builder = context.create_builder();
+        let module = context.create_module("main");
+        let compile = compile::Compile::new(&context, &builder, &module);
+        compile.add_main(&ast);
         compile.print();
     }
 }

@@ -1,6 +1,6 @@
 use crate::token::*;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
     BinOp(Token, Box<Expr>, Box<Expr>),
     Number(i32),

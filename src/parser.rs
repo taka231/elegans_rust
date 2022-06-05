@@ -5,7 +5,7 @@ use std::slice::Iter;
 
 pub fn parse(tokens: &[Token]) -> Vec<Stmt> {
     let mut stmt_vec: Vec<Stmt> = Vec::new();
-    let mut stmts = tokens.split(|token| *token == Token::Semicolon);
+    let stmts = tokens.split(|token| *token == Token::Semicolon);
     for stmt in stmts {
         if *stmt == [] {
             continue;
