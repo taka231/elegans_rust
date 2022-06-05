@@ -104,7 +104,6 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     }
                 } else if is_leading_char(c) {
                     let mut ident = lexer.take_while(is_ident_char);
-                    println!("hoge");
                     if lexer.currentchar_fulfill(|c| c == '\'') {
                         ident.push_str("'");
                         lexer.next();
