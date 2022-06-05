@@ -6,6 +6,9 @@ pub enum Token {
     RParen,
     Ident(String),
     Semicolon,
+    If,
+    Then,
+    Else,
 }
 
 struct Lexer {
@@ -70,6 +73,15 @@ fn is_ident_char(c: char) -> bool {
     c.is_ascii_alphabetic() || c == '_' || c.is_digit(10)
 }
 
+fn is_keyword(str: &str) -> Option<Token> {
+    match str {
+        "if" => Some(Token::If),
+        "then" => Some(Token::Then),
+        "else" => Some(Token::Else),
+        _ => None,
+    }
+}
+
 pub fn tokenize(input: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut lexer = Lexer::new(input);
@@ -108,7 +120,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                         ident.push_str("'");
                         lexer.next();
                     }
-                    tokens.push(Token::Ident(ident));
+                    if let Some(token) = is_keyword(&ident) {
+                        tokens.push(token)
+                    } else {
+                        tokens.push(Token::Ident(ident));
+                    }
                     continue;
                 }
             }
@@ -147,5 +163,6 @@ mod tests {
         ident_containing_num: ("a03b", [Ident("a03b".to_string())]),
         ident_end_with_singlequote: ("abc'", [Ident("abc'".to_string())]),
         assign: ("a = b", [Ident("a".to_string()), Op("=".to_string()), Ident("b".to_string())]),
+        if_then_else: ("if then else", [If, Then, Else]),
     }
 }
