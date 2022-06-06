@@ -92,7 +92,24 @@ fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
                 panic!("Expected LParen")
             }
         }
+        Some(Token::If) => parse_if(tokens),
         _ => panic!("Expected term"),
+    }
+}
+
+fn parse_if(tokens: &mut Peekable<Iter<Token>>) -> Expr {
+    expect_token(tokens, Token::If);
+    let cond = parse_expr(tokens);
+    expect_token(tokens, Token::Then);
+    let then_expr = parse_expr(tokens);
+    expect_token(tokens, Token::Else);
+    let else_expr = parse_expr(tokens);
+    Expr::If(Box::new(cond), Box::new(then_expr), Box::new(else_expr))
+}
+
+fn expect_token(tokens: &mut Peekable<Iter<Token>>, token: Token) {
+    if tokens.next() != Some(&token) {
+        panic!()
     }
 }
 
@@ -179,6 +196,14 @@ mod expr_tests {
                 Token::Op("+".to_string()),
                 Box::new(Var("a".to_string())),
                 Box::new(Var("b".to_string()))
+            )
+        ),
+        if_then_else: (
+            "if a then b else c",
+            If(
+                Box::new(Var("a".to_string())),
+                Box::new(Var("b".to_string())),
+                Box::new(Var("c".to_string()))
             )
         ),
     }
