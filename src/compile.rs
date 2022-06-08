@@ -3,7 +3,8 @@ use crate::token::*;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
-use inkwell::values::IntValue;
+use inkwell::values::BasicValueEnum;
+use inkwell::values::BasicValueEnum::*;
 use std::collections::HashMap;
 
 pub struct Compile<'a, 'ctx> {
@@ -27,8 +28,8 @@ impl<'a, 'ctx> Compile<'a, 'ctx> {
     fn compile_stmt(
         &self,
         stmts: &'a [Stmt],
-        env: &mut HashMap<&'a str, IntValue<'ctx>>,
-    ) -> IntValue {
+        env: &mut HashMap<&'a str, BasicValueEnum<'ctx>>,
+    ) -> BasicValueEnum {
         let (init_stmts, last_stmt) = stmts.split_at(stmts.len() - 1);
         for stmt in init_stmts {
             match stmt {
@@ -50,40 +51,29 @@ impl<'a, 'ctx> Compile<'a, 'ctx> {
     fn compile_expr(
         &self,
         expr: &Expr,
-        env: &mut HashMap<&'a str, IntValue<'ctx>>,
-    ) -> IntValue<'ctx> {
+        env: &mut HashMap<&'a str, BasicValueEnum<'ctx>>,
+    ) -> BasicValueEnum<'ctx> {
         match expr {
-            Expr::Number(num) => self.context.i64_type().const_int(*num as u64, false),
-            Expr::BinOp(Token::Op(str), lh, rh) => match &str as &str {
-                "+" => self.builder.build_int_add(
-                    self.compile_expr(lh, env),
-                    self.compile_expr(rh, env),
-                    "add",
-                ),
-                "-" => self.builder.build_int_sub(
-                    self.compile_expr(lh, env),
-                    self.compile_expr(rh, env),
-                    "sub",
-                ),
+            Expr::Number(num) => IntValue(self.context.i64_type().const_int(*num as u64, false)),
+            Expr::BinOp(Token::Op(str), lh, rh) => {
+                match (self.compile_expr(lh, env), self.compile_expr(rh, env)) {
+                    (IntValue(lhval), IntValue(rhval)) => match &str as &str {
+                        "+" => IntValue(self.builder.build_int_add(lhval, rhval, "add")),
+                        "-" => IntValue(self.builder.build_int_sub(lhval, rhval, "sub")),
+                        "*" => IntValue(self.builder.build_int_mul(lhval, rhval, "mul")),
+                        "/" => IntValue(self.builder.build_int_signed_div(lhval, rhval, "div")),
+                        _ => unimplemented!(),
+                    },
+                    _ => unimplemented!(),
+                }
+            }
 
-                "*" => self.builder.build_int_mul(
-                    self.compile_expr(lh, env),
-                    self.compile_expr(rh, env),
-                    "sub",
-                ),
-                "/" => self.builder.build_int_signed_div(
-                    self.compile_expr(lh, env),
-                    self.compile_expr(rh, env),
-                    "sub",
-                ),
-                _ => panic!(),
-            },
             Expr::Var(varname) => match env.get(&(&varname as &str)) {
                 Some(expr) => *expr,
                 None => panic!(),
             },
 
-            _ => panic!(),
+            _ => unimplemented!(),
         }
     }
     pub fn add_main(&self, ast: &[Stmt]) {
