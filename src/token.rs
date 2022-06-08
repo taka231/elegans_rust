@@ -61,7 +61,7 @@ impl Lexer {
 }
 
 fn is_operator(c: char) -> bool {
-    let operators = vec!['+', '-', '*', '/', '='];
+    let operators = vec!['+', '-', '*', '/', '=', '>', '<'];
     operators.contains(&c)
 }
 
@@ -164,5 +164,9 @@ mod tests {
         ident_end_with_singlequote: ("abc'", [Ident("abc'".to_string())]),
         assign: ("a = b", [Ident("a".to_string()), Op("=".to_string()), Ident("b".to_string())]),
         if_then_else: ("if then else", [If, Then, Else]),
+        eq: ("a == b", [Ident("a".to_string()), Op("==".to_string()), Ident("b".to_string())]),
+        gt: ("a > b", [Ident("a".to_string()), Op(">".to_string()), Ident("b".to_string())]),
+        lt: ("a < b", [Ident("a".to_string()), Op("<".to_string()), Ident("b".to_string())]),
+        ne: ("a /= b", [Ident("a".to_string()), Op("/=".to_string()), Ident("b".to_string())]),
     }
 }
