@@ -26,7 +26,7 @@ fn main() {
         let context = Context::create();
         let builder = context.create_builder();
         let module = context.create_module("main");
-        let compile = compile::Compile::new(&context, &builder, &module);
+        let mut compile = compile::Compile::new(&context, &builder, &module);
         compile.add_main(&ast);
         compile.print();
     }
@@ -48,6 +48,9 @@ fn repl() {
             continue;
         }
 
-        println!("{:?}", parser::parse(&token::tokenize(&input)))
+        println!(
+            "{:?}",
+            parser::parse_expr(&mut token::tokenize(&input).iter().peekable())
+        )
     }
 }
