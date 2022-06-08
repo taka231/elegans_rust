@@ -76,6 +76,18 @@ impl<'a, 'ctx> Compile<'a, 'ctx> {
                                     .build_int_compare(IntP::SGT, lhval, rhval, "sgt"),
                             )
                         }
+                        "<" => {
+                            IntValue(
+                                self.builder
+                                    .build_int_compare(IntP::SLT, lhval, rhval, "slt"),
+                            )
+                        }
+                        "==" => {
+                            IntValue(self.builder.build_int_compare(IntP::EQ, lhval, rhval, "eq"))
+                        }
+                        "/=" => {
+                            IntValue(self.builder.build_int_compare(IntP::NE, lhval, rhval, "eq"))
+                        }
                         _ => unimplemented!(),
                     },
                     _ => unimplemented!(),
