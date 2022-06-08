@@ -29,8 +29,33 @@ pub fn parse(tokens: &[Token]) -> Vec<Stmt> {
     stmt_vec
 }
 
-fn parse_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
-    parse_additive_expr(tokens)
+pub fn parse_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
+    parse_compare_expr(tokens)
+}
+
+fn parse_compare_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
+    let mut left_expr = parse_additive_expr(tokens);
+    loop {
+        match tokens.peek() {
+            Some(Token::Op(op))
+                if &op as &str == ">"
+                    || &op as &str == "<"
+                    || &op as &str == "=="
+                    || &op as &str == "/=" =>
+            {
+                tokens.next();
+                let right_expr = parse_additive_expr(tokens);
+                left_expr = Expr::BinOp(
+                    Token::Op(op.clone()),
+                    Box::new(left_expr),
+                    Box::new(right_expr),
+                );
+            }
+            _ => break,
+        }
+    }
+
+    left_expr
 }
 
 fn parse_additive_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
@@ -204,6 +229,20 @@ mod expr_tests {
                 Box::new(Var("a".to_string())),
                 Box::new(Var("b".to_string())),
                 Box::new(Var("c".to_string()))
+            )
+        ),
+        gt: (
+            "1 > 2 + 2",
+            BinOp(
+                Token::Op(">".to_string()),
+                Box::new(Number(1)),
+                Box::new(
+                    BinOp(
+                        Token::Op("+".to_string()),
+                        Box::new(Number(2)),
+                        Box::new(Number(2))
+                    )
+                )
             )
         ),
     }
