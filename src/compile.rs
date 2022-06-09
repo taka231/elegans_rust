@@ -46,6 +46,7 @@ impl<'a, 'ctx> Compile<'a, 'ctx> {
                     let rh = self.compile_expr(expr, env);
                     env.insert(&varname, rh);
                 }
+                _ => unimplemented!(),
             }
         }
         match &last_stmt[0] {

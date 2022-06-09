@@ -13,9 +13,28 @@ pub fn parse(tokens: &[Token]) -> Vec<Stmt> {
         let mut stmt_iter = stmt.iter().peekable();
         let expr = parse_expr(&mut stmt_iter);
         match expr {
-            Expr::Var(varname) if stmt_iter.next() == Some(&Token::Op("=".to_string())) => {
+            Expr::Var(varname) if stmt_iter.peek() == Some(&&Token::Op("=".to_string())) => {
+                stmt_iter.next();
                 let rh = parse_expr(&mut stmt_iter);
                 stmt_vec.push(Stmt::Assign(varname, rh));
+            }
+            Expr::Var(fnname) => {
+                let mut args: Vec<String> = Vec::new();
+                loop {
+                    match stmt_iter.peek() {
+                        Some(Token::Ident(arg_name)) => {
+                            stmt_iter.next();
+                            args.push(arg_name.to_string())
+                        }
+                        Some(Token::Op(op)) if &op as &str == "=" => {
+                            stmt_iter.next();
+                            break;
+                        }
+                        _ => panic!(),
+                    }
+                }
+                let body = parse_expr(&mut stmt_iter);
+                stmt_vec.push(Stmt::FnDef(fnname, args, body));
             }
             _ => {
                 if stmt_iter.next() == None {
@@ -273,6 +292,10 @@ mod stmt_tests {
         assign: ("a = 3; a + 2", [
             Assign("a".to_string(), Number(3)),
             ExprStmt(BinOp(Token::Op("+".to_string()), Box::new(Var("a".to_string())), Box::new(Number(2))))
+        ]),
+        fn_def: ("add a b = a + b;", [
+            FnDef("add".to_string(), vec!["a".to_string(), "b".to_string()],
+                BinOp(Token::Op("+".to_string()), Box::new( Var("a".to_string()) ), Box::new(Var("b".to_string()))))
         ]),
     }
 }

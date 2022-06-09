@@ -12,4 +12,5 @@ pub enum Expr {
 pub enum Stmt {
     Assign(String, Expr),
     ExprStmt(Expr),
+    FnDef(String, Vec<String>, Expr),
 }
