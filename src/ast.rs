@@ -6,6 +6,7 @@ pub enum Expr {
     Number(i32),
     Var(String),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
+    FnCall(Box<Expr>, Vec<Expr>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
