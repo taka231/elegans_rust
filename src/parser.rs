@@ -18,23 +18,24 @@ pub fn parse(tokens: &[Token]) -> Vec<Stmt> {
                 let rh = parse_expr(&mut stmt_iter);
                 stmt_vec.push(Stmt::Assign(varname, rh));
             }
-            Expr::Var(fnname) => {
-                let mut args: Vec<String> = Vec::new();
-                loop {
-                    match stmt_iter.peek() {
-                        Some(Token::Ident(arg_name)) => {
-                            stmt_iter.next();
-                            args.push(arg_name.to_string())
-                        }
-                        Some(Token::Op(op)) if &op as &str == "=" => {
-                            stmt_iter.next();
-                            break;
-                        }
-                        _ => panic!(),
+            Expr::FnCall(fnname, args)
+                if stmt_iter.peek() == Some(&&Token::Op("=".to_string())) =>
+            {
+                stmt_iter.next();
+                match *fnname {
+                    Expr::Var(fnname) => {
+                        let body = parse_expr(&mut stmt_iter);
+                        let args = args
+                            .iter()
+                            .map(|expr| match expr {
+                                Expr::Var(argname) => argname.to_string(),
+                                _ => panic!("expected ident"),
+                            })
+                            .collect();
+                        stmt_vec.push(Stmt::FnDef(fnname, args, body))
                     }
+                    _ => panic!("expected ident"),
                 }
-                let body = parse_expr(&mut stmt_iter);
-                stmt_vec.push(Stmt::FnDef(fnname, args, body));
             }
             _ => {
                 if stmt_iter.next() == None {
@@ -98,12 +99,12 @@ fn parse_additive_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
 }
 
 fn parse_multiplicative_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
-    let mut left_expr = parse_term(tokens);
+    let mut left_expr = parse_app_expr(tokens);
     loop {
         match tokens.peek() {
             Some(Token::Op(op)) if &op as &str == "*" || &op as &str == "/" => {
                 tokens.next();
-                let right_expr = parse_term(tokens);
+                let right_expr = parse_app_expr(tokens);
                 left_expr = Expr::BinOp(
                     Token::Op(op.clone()),
                     Box::new(left_expr),
@@ -117,8 +118,25 @@ fn parse_multiplicative_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
     left_expr
 }
 
+fn parse_app_expr(tokens: &mut Peekable<Iter<Token>>) -> Expr {
+    let expr = parse_term(tokens);
+    let mut args: Vec<Expr> = Vec::new();
+    loop {
+        match tokens.peek() {
+            Some(Token::Op(_)) | Some(Token::RParen) | Some(Token::Then) | Some(Token::Else)
+            | None => break,
+            _ => args.push(parse_term(tokens)),
+        }
+    }
+    if args.len() == 0 {
+        expr
+    } else {
+        Expr::FnCall(Box::new(expr), args)
+    }
+}
+
 fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
-    match tokens.peek() {
+    let expr = match tokens.peek() {
         Some(Token::Number(num)) => {
             tokens.next();
             Expr::Number(*num)
@@ -138,7 +156,8 @@ fn parse_term(tokens: &mut Peekable<Iter<Token>>) -> Expr {
         }
         Some(Token::If) => parse_if(tokens),
         _ => panic!("Expected term"),
-    }
+    };
+    expr
 }
 
 fn parse_if(tokens: &mut Peekable<Iter<Token>>) -> Expr {
@@ -264,6 +283,10 @@ mod expr_tests {
                 )
             )
         ),
+        fn_call: (
+            "add 2 3",
+            FnCall(Box::new(Var("add".to_string())), vec![Number(2), Number(3)])
+        ),
     }
 }
 
@@ -296,6 +319,11 @@ mod stmt_tests {
         fn_def: ("add a b = a + b;", [
             FnDef("add".to_string(), vec!["a".to_string(), "b".to_string()],
                 BinOp(Token::Op("+".to_string()), Box::new( Var("a".to_string()) ), Box::new(Var("b".to_string()))))
+        ]),
+        fn_def_and_fn_call: ("add a b = a + b; add 2 3", [
+            FnDef("add".to_string(), vec!["a".to_string(), "b".to_string()],
+                BinOp(Token::Op("+".to_string()), Box::new( Var("a".to_string()) ), Box::new(Var("b".to_string())))),
+            ExprStmt(FnCall(Box::new(Var("add".to_string())), vec![Number(2), Number(3)]))
         ]),
     }
 }
